@@ -63,9 +63,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\EndLevel.cs" />
-    <Compile Include="Assets\RandomizeProp.cs" />
+    <Compile Include="Assets\Scripts\EndLevel.cs" />
     <Compile Include="Assets\Scripts\LevelLoader.cs" />
+    <Compile Include="Assets\Scripts\Management.cs" />
+    <Compile Include="Assets\Scripts\RandomizeProp.cs" />
     <Compile Include="Assets\Scripts\playerController.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using System.Collections;
 
 public class playerController : MonoBehaviour {
@@ -26,27 +27,33 @@ public class playerController : MonoBehaviour {
     float playerStartX;
     EndLevel el;
     float elX;
+    Management manage;
+    Text coinText;
+    bool gotCoinThisLevel = false;
 
 	// Use this for initialization
 	void Start () {
         animator = this.GetComponent<Animator>();
         rb = this.GetComponent<Rigidbody2D>();
         cam = GameObject.FindWithTag("MainCamera").GetComponent<Camera>();
+        coinText = GameObject.FindWithTag("TextCoin").GetComponent<Text>();
         rend = this.GetComponent<Renderer>();
         layerMask = LayerMask.GetMask("Ground");
         playerStartX = transform.position.x+13.6f;
         el = (EndLevel)FindObjectOfType(typeof(EndLevel));
+        manage = (Management)FindObjectOfType(typeof(Management));
         elX = el.gameObject.transform.position.x-9.0f;
     }
 
     // Update is called once per frame
     void Update () {
+        coinText.text = "x" +  manage.coinCounter.ToString();
         var horizontal = Input.GetAxis("Horizontal");
         var vertical = Input.GetAxis("Vertical");
         if (playerStartX-16 > transform.position.x || transform.position.x > elX+11)
         {
             Debug.Log("Out of bounds - reloading level!");
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            RestartLevel();
         }
         if (isGrounded)
         {
@@ -238,11 +245,13 @@ public class playerController : MonoBehaviour {
     {
         if (coll.gameObject.tag == "Lethal")
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            RestartLevel();
         }
         if (coll.gameObject.tag == "Coin")
         {
             Destroy(coll.gameObject);
+            gotCoinThisLevel = true;
+            manage.coinCounter++;
         }
         float horizontal = Input.GetAxis("Horizontal");
         if (!isGrounded)
@@ -262,12 +271,21 @@ public class playerController : MonoBehaviour {
         }
         else
         {
-            Debug.Log("Absolute horizontal input: " + Mathf.Abs(horizontal) + "& x-velocity: " + rb.velocity.x);
+            //Debug.Log("Absolute horizontal input: " + Mathf.Abs(horizontal) + "& x-velocity: " + rb.velocity.x);
             if (Mathf.Abs(horizontal) > 0.2f && Mathf.Abs(rb.velocity.x) <= 0.1f)
             {
                 wallJumping = true;
                 wallJumpingClock = 0.09f;
             }
         }
+    }
+
+    void RestartLevel()
+    {
+        if (gotCoinThisLevel)
+        {
+            manage.coinCounter--;
+        }
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 } 
