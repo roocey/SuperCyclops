@@ -136,8 +136,11 @@ public class playerController : MonoBehaviour {
         if (hit.collider != null)
         {
             isGrounded = true;
-            wallJumping = false;
-            wallJumpingClock = 0;
+            if (Mathf.Abs(rb.velocity.x) > 0.1f)
+            {
+                wallJumping = false;
+                wallJumpingClock = 0;
+            }
         }
         else
         {
@@ -241,9 +244,9 @@ public class playerController : MonoBehaviour {
         {
             Destroy(coll.gameObject);
         }
+        float horizontal = Input.GetAxis("Horizontal");
         if (!isGrounded)
         {
-            float horizontal = Input.GetAxis("Horizontal");
             if (horizontal > 0 && coll.transform.position.x > transform.position.x)
             {
                 wallJumping = true;
@@ -255,6 +258,15 @@ public class playerController : MonoBehaviour {
                 wallJumping = true;
                 wallJumpingClock = 0.09f;
                 transform.position = new Vector3(transform.position.x, transform.position.y - (Time.fixedDeltaTime), transform.position.z);
+            }
+        }
+        else
+        {
+            Debug.Log("Absolute horizontal input: " + Mathf.Abs(horizontal) + "& x-velocity: " + rb.velocity.x);
+            if (Mathf.Abs(horizontal) > 0.2f && Mathf.Abs(rb.velocity.x) <= 0.1f)
+            {
+                wallJumping = true;
+                wallJumpingClock = 0.09f;
             }
         }
     }
