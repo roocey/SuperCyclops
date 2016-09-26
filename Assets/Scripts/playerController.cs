@@ -14,10 +14,9 @@ public class playerController : MonoBehaviour {
     float jumpPenaltySpeed = 4.5f; //maximum horizontal velocity while jumping in the opposite direction the jump started in (e.g., making a right-facing jump go left). also applies when jumping with 0 velocity
     bool jumping = false;
     float dashing = 1.0f;
+    bool canDash = true;
     bool isGrounded = true;
     bool wallJumping = false;
-    float slipJumpTimer = 0f;
-    bool slipCheck = true;
     int pushAwayCounter = 0; //number of FixedUpdate ticks the player is pushed away after wall jumping
     float pushAwayDirection = 0f;
     float camY = 7.75f;
@@ -40,6 +39,7 @@ public class playerController : MonoBehaviour {
         if (isGrounded)
         {
             camY = transform.position.y - 0.5f;
+            canDash = true;
 
             if (vertical < 0 && Mathf.Abs(horizontal) < 0.2f)
             {
@@ -60,9 +60,9 @@ public class playerController : MonoBehaviour {
             }
 
 
-            if (camY < 10.0f)
+            if (camY < 7.75f)
             {
-                camY = 10.0f;
+                camY = 7.75f;
             }
         }
         else
@@ -96,37 +96,31 @@ public class playerController : MonoBehaviour {
 
         if (Input.GetButtonDown("Fire1")) {
             jumping = true;
-            slipCheck = false;
             jumpXVelocity = rb.velocity.x;
         }
         if (Input.GetButtonDown("Fire2"))
         {
-            if (dashing == 1.0f)
+            if (dashing == 1.0f && canDash)
             {
                 dashing = 5.0f;
+                canDash = false;
             }
         }
         if (Input.GetButtonDown("Fire3"))
         {
             Application.Quit();
         }
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, -Vector2.up, 1.0f, layerMask);
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, -Vector2.up, 0.5f, layerMask);
 
         if (hit.collider != null)
         {
             isGrounded = true;
-            slipCheck = true;
             wallJumping = false;
             wallJumpingClock = 0;
         }
         else
         {
             isGrounded = false;
-            if (slipCheck)
-            {
-                slipJumpTimer = 0.35f;
-                slipCheck = false;
-            }
         }
         if (wallJumpingClock > 0)
         {
@@ -134,14 +128,6 @@ public class playerController : MonoBehaviour {
             if (wallJumpingClock <= 0)
             {
                 wallJumping = false;
-            }
-        }
-        if (slipJumpTimer > 0)
-        {
-            slipJumpTimer -= Time.deltaTime;
-            if (slipJumpTimer <= 0)
-            {
-                slipJumpTimer = 0;
             }
         }
         if (dashing > 1)
@@ -194,18 +180,18 @@ public class playerController : MonoBehaviour {
             }
         }
 
-        if (jumping && (isGrounded || wallJumping || slipJumpTimer > 0))
+        if (jumping && (isGrounded || wallJumping))
         {
             yVelocity = jumpSpeed;
-            slipJumpTimer = 0;
             if (wallJumping)
             {
+                canDash = true;
                 pushAwayCounter = 12;
                 pushAwayDirection = Input.GetAxis("Horizontal");
-                wallJumping = false;
                 wallJumpingClock = 0;
                 jumpXVelocity = -pushAwayDirection;
             }
+            wallJumping = false;
         }
 
         jumping = false;
@@ -217,7 +203,7 @@ public class playerController : MonoBehaviour {
         }
         if (dashing > 1)
         {
-            yVelocity = yVelocity * 0.9f;
+            yVelocity = yVelocity * 0.5f;
         }
 
         rb.velocity = new Vector2(xVelocity, yVelocity);
@@ -229,6 +215,10 @@ public class playerController : MonoBehaviour {
         if (coll.gameObject.tag == "Lethal")
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+        if (coll.gameObject.tag == "Coin")
+        {
+            Destroy(coll.gameObject);
         }
         if (!isGrounded)
         {
