@@ -9,7 +9,7 @@ public class playerController : MonoBehaviour {
     Camera cam;
     Renderer rend;
     float maxSpeed = 6f;
-    float jumpSpeed = 13f;
+    float jumpSpeed = 11f;
     float jumpXVelocity = 0f;
     float jumpPenaltySpeed = 4.5f; //maximum horizontal velocity while jumping in the opposite direction the jump started in (e.g., making a right-facing jump go left). also applies when jumping with 0 velocity
     bool jumping = false;
@@ -20,8 +20,12 @@ public class playerController : MonoBehaviour {
     int pushAwayCounter = 0; //number of FixedUpdate ticks the player is pushed away after wall jumping
     float pushAwayDirection = 0f;
     float camY = 7.75f;
+    float camX;
     int layerMask;
     float wallJumpingClock = 0f; //counter that measures how long the player after contacting a wall to make a wall jump (2/3rds of a second)
+    float playerStartX;
+    EndLevel el;
+    float elX;
 
 	// Use this for initialization
 	void Start () {
@@ -30,12 +34,20 @@ public class playerController : MonoBehaviour {
         cam = GameObject.FindWithTag("MainCamera").GetComponent<Camera>();
         rend = this.GetComponent<Renderer>();
         layerMask = LayerMask.GetMask("Ground");
+        playerStartX = transform.position.x+13.6f;
+        el = (EndLevel)FindObjectOfType(typeof(EndLevel));
+        elX = el.gameObject.transform.position.x-9.0f;
     }
 
     // Update is called once per frame
     void Update () {
         var horizontal = Input.GetAxis("Horizontal");
         var vertical = Input.GetAxis("Vertical");
+        if (playerStartX-16 > transform.position.x || transform.position.x > elX+11)
+        {
+            Debug.Log("Out of bounds - reloading level!");
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
         if (isGrounded)
         {
             camY = transform.position.y - 0.5f;
@@ -83,8 +95,17 @@ public class playerController : MonoBehaviour {
             }
             
         }
+        camX = transform.position.x+5;
+        if (playerStartX > camX)
+        {
+            camX = playerStartX;
+        }
+        if (camX > elX)
+        {
+            camX = elX;
+        }
         //cam.transform.position = new Vector3(cam.transform.position.x, camY, cam.transform.position.z);
-        Vector3 nextCamPosition = new Vector3(transform.position.x, camY, cam.transform.position.z);
+        Vector3 nextCamPosition = new Vector3(camX, camY, cam.transform.position.z);
         if (rend.isVisible)
         {
             cam.transform.position = Vector3.Lerp(cam.transform.position, nextCamPosition, Time.deltaTime*1.33f);
