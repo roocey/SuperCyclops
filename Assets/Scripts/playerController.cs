@@ -52,15 +52,16 @@ public class playerController : MonoBehaviour {
         var vertical = Input.GetAxis("Vertical");
         if (playerStartX-16 > transform.position.x || transform.position.x > elX+11)
         {
-            Debug.Log("Out of bounds - reloading level!");
+            //Debug.Log("Out of bounds - reloading level!");
             RestartLevel();
         }
         if (isGrounded)
         {
             camY = transform.position.y - 0.5f;
             canDash = true;
+            //jumpXVelocity = 0;
 
-            if (vertical < 0 && Mathf.Abs(horizontal) < 0.2f)
+            if (-0.9f > vertical && Mathf.Abs(horizontal) < 0.1f)
             {
                 animator.SetInteger("Direction", 3);
                 camY = transform.position.y - 1.75f;
@@ -86,12 +87,12 @@ public class playerController : MonoBehaviour {
         }
         else
         {
-            if (jumpXVelocity >= 0)
+            if (horizontal >= 0)
             {
                 animator.SetInteger("Direction", 2);
                 animator.Play("playerJumping"); //overly redundant?
             }
-            else
+            else if (horizontal < 0)
             {
                 animator.SetInteger("Direction", -2);
                 animator.Play("playerJumpingLeft"); //see above
