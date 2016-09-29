@@ -139,6 +139,10 @@ public class playerController : MonoBehaviour {
         {
             Application.Quit();
         }
+        if (Input.GetButtonDown("Skip"))
+        {
+            NextLevel();
+        }
         RaycastHit2D hit = Physics2D.Raycast(transform.position, -Vector2.up, 0.5f, layerMask);
 
         if (hit.collider != null)
@@ -218,7 +222,7 @@ public class playerController : MonoBehaviour {
             if (wallJumping)
             {
                 canDash = true;
-                pushAwayCounter = 12;
+                pushAwayCounter = 6;
                 pushAwayDirection = Input.GetAxis("Horizontal");
                 wallJumpingClock = 0;
                 jumpXVelocity = -pushAwayDirection;
@@ -235,25 +239,35 @@ public class playerController : MonoBehaviour {
         }
         if (dashing > 1)
         {
-            yVelocity = yVelocity * 0.5f;
+            if (yVelocity < 0)
+            {
+                yVelocity = 0;
+            }
         }
 
         rb.velocity = new Vector2(xVelocity, yVelocity);
 
     }
-
-    void OnCollisionStay2D(Collision2D coll)
+    void OnCollisionEnter2D(Collision2D coll)
     {
         if (coll.gameObject.tag == "Lethal")
         {
             RestartLevel();
         }
-        if (coll.gameObject.tag == "Coin")
+        else if (coll.gameObject.tag == "Goal")
+        {
+            NextLevel();
+        }
+        else if (coll.gameObject.tag == "Coin")
         {
             Destroy(coll.gameObject);
             gotCoinThisLevel = true;
             manage.coinCounter++;
         }
+    }
+
+    void OnCollisionStay2D(Collision2D coll)
+    {
         float horizontal = Input.GetAxis("Horizontal");
         if (!isGrounded)
         {
@@ -288,5 +302,12 @@ public class playerController : MonoBehaviour {
             manage.coinCounter--;
         }
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    void NextLevel()
+    {
+        //could use a test function of some kind (Scene.isValid() ? )
+        int nextScene = SceneManager.GetActiveScene().buildIndex + 1;
+        SceneManager.LoadScene(nextScene);
     }
 } 
