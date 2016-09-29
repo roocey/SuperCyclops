@@ -9,27 +9,32 @@ public class playerController : MonoBehaviour {
     Rigidbody2D rb;
     Camera cam;
     Renderer rend;
+    Management manage;
+    Text coinText;
+    EndLevel el;
+
     float maxSpeed = 6f;
-    float jumpSpeed = 11f;
+    float jumpSpeed = 8.25f;
     float jumpXVelocity = 0f;
     float jumpPenaltySpeed = 4.5f; //maximum horizontal velocity while jumping in the opposite direction the jump started in (e.g., making a right-facing jump go left). also applies when jumping with 0 velocity
-    bool jumping = false;
     float dashing = 1.0f;
+    float pushAwayDirection = 0f;
+    float camY;
+    float camX;
+    float wallJumpingClock = 0f; //counter that measures how long the player after contacting a wall to make a wall jump (2/3rds of a second)
+    float playerStartX;
+    float elX;
+
+    bool jumping = false;
     bool canDash = true;
     bool isGrounded = true;
     bool wallJumping = false;
-    int pushAwayCounter = 0; //number of FixedUpdate ticks the player is pushed away after wall jumping
-    float pushAwayDirection = 0f;
-    float camY = 7.75f;
-    float camX;
-    int layerMask;
-    float wallJumpingClock = 0f; //counter that measures how long the player after contacting a wall to make a wall jump (2/3rds of a second)
-    float playerStartX;
-    EndLevel el;
-    float elX;
-    Management manage;
-    Text coinText;
     bool gotCoinThisLevel = false;
+    bool canJump = false;
+
+    int pushAwayCounter = 0; //number of FixedUpdate ticks the player is pushed away after wall jumping (6)
+    int longJumpCounter = 0; //number of Update ticks the player can hold down jump to extend their jump (10)
+    int layerMask;
 
 	// Use this for initialization
 	void Start () {
@@ -148,6 +153,7 @@ public class playerController : MonoBehaviour {
         if (hit.collider != null)
         {
             isGrounded = true;
+            canJump = true;
             if (Mathf.Abs(rb.velocity.x) > 0.1f)
             {
                 wallJumping = false;
@@ -164,6 +170,10 @@ public class playerController : MonoBehaviour {
             if (wallJumpingClock <= 0)
             {
                 wallJumping = false;
+                if (!isGrounded)
+                {
+                    canJump = false;
+                }
             }
         }
         if (dashing > 1)
@@ -215,8 +225,16 @@ public class playerController : MonoBehaviour {
                 }
             }
         }
+        if (Input.GetButton("Fire1"))
+        {
+            if (longJumpCounter > 0)
+            {
+                yVelocity += jumpSpeed / 30f;
+                longJumpCounter--;
+            }
+        }
 
-        if (jumping && (isGrounded || wallJumping))
+        if (jumping && (canJump || wallJumping))
         {
             yVelocity = jumpSpeed;
             if (wallJumping)
@@ -228,6 +246,8 @@ public class playerController : MonoBehaviour {
                 jumpXVelocity = -pushAwayDirection;
             }
             wallJumping = false;
+            canJump = false;
+            longJumpCounter = 15;
         }
 
         jumping = false;
@@ -276,12 +296,14 @@ public class playerController : MonoBehaviour {
                 wallJumping = true;
                 wallJumpingClock = 0.09f;
                 transform.position = new Vector3(transform.position.x, transform.position.y - (Time.fixedDeltaTime), transform.position.z);
+                canJump = true;
             }
             else if (horizontal < 0 && coll.transform.position.x < transform.position.x)
             {
                 wallJumping = true;
                 wallJumpingClock = 0.09f;
                 transform.position = new Vector3(transform.position.x, transform.position.y - (Time.fixedDeltaTime), transform.position.z);
+                canJump = true;
             }
         }
         else
@@ -291,6 +313,7 @@ public class playerController : MonoBehaviour {
             {
                 wallJumping = true;
                 wallJumpingClock = 0.09f;
+                canJump = true;
             }
         }
     }
