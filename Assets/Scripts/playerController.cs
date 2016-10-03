@@ -12,6 +12,7 @@ public class playerController : MonoBehaviour {
     Management manage;
     Text coinText;
     EndLevel el;
+    ParticleSystem ps;
 
     float maxSpeed = 6f;
     float jumpSpeed = 8.25f;
@@ -48,10 +49,20 @@ public class playerController : MonoBehaviour {
         el = (EndLevel)FindObjectOfType(typeof(EndLevel));
         manage = (Management)FindObjectOfType(typeof(Management));
         elX = el.gameObject.transform.position.x-9.0f;
+        ps = this.GetComponent<ParticleSystem>();
+        transform.localScale = new Vector3(0.1f, 0.1f, transform.localScale.z);
     }
 
     // Update is called once per frame
     void Update () {
+        if (transform.localScale.x != 1.0f || transform.localScale.y != 1.0f)
+        {
+            transform.localScale = new Vector3(transform.localScale.x + (Time.deltaTime*2), transform.localScale.y + (Time.deltaTime*2), transform.localScale.z);
+            if (transform.localScale.x >= 1.0f || transform.localScale.y >= 1.0f)
+            {
+                transform.localScale = new Vector3(1.0f, 1.0f, transform.localScale.z);
+            }
+        }
         coinText.text = "x" +  manage.coinCounter.ToString();
         var horizontal = Input.GetAxis("Horizontal");
         var vertical = Input.GetAxis("Vertical");
@@ -237,6 +248,7 @@ public class playerController : MonoBehaviour {
         if (jumping && (canJump || wallJumping))
         {
             yVelocity = jumpSpeed;
+            ps.Play();
             if (wallJumping)
             {
                 canDash = true;

@@ -82,6 +82,10 @@ public class LevelLoader : MonoBehaviour
             {
                 // Spawn the prefab at the right location
                 GameObject go = (GameObject)Instantiate(ctp.prefab, new Vector3(x*1.28f, y*1.28f, 0), Quaternion.identity);
+                if (go.name == "PlayerPrefab(Clone)")
+                {
+                    go.transform.position = new Vector3(go.transform.position.x, go.transform.position.y, -1);
+                }
                 go.transform.SetParent(this.transform);
                 // maybe do more stuff to the gameobject here?
                 return;
