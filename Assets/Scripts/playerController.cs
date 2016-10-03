@@ -68,24 +68,11 @@ public class playerController : MonoBehaviour {
     void Update () {
         if (vort.radius.x >= 0.1f)
         {
-            vort.radius = new Vector2(vort.radius.x + (Time.deltaTime * 5f), vort.radius.y + (Time.deltaTime * 5f));
-            if (transform.localScale.x > 0.2f)
-            {
-                transform.localScale = new Vector3(transform.localScale.x - (Time.deltaTime * 2), transform.localScale.y + (Time.deltaTime * 2), transform.localScale.z);
-            }
-            if (vort.radius.x >= 4.0f)
-            {
-                NextLevel();
-            }
-            return;
+            LevelEndEffect();
         }
-        if ((transform.localScale.x != 1.0f || transform.localScale.y != 1.0f) && !dead)
+        if ((transform.localScale.x != 1.0) && !dead)
         {
-            transform.localScale = new Vector3(transform.localScale.x + (Time.deltaTime*2), transform.localScale.y + (Time.deltaTime*2), transform.localScale.z);
-            if (transform.localScale.x >= 1.0f || transform.localScale.y >= 1.0f)
-            {
-                transform.localScale = new Vector3(1.0f, 1.0f, transform.localScale.z);
-            }
+            LevelStartEffect();
         }
         coinText.text = "x" +  manage.coinCounter.ToString();
         var horizontal = Input.GetAxis("Horizontal");
@@ -97,71 +84,14 @@ public class playerController : MonoBehaviour {
         }
         if (isGrounded)
         {
-            camY = transform.position.y - 0.5f;
-            canDash = true;
-            //jumpXVelocity = 0;
-
-            if (-0.9f > vertical && Mathf.Abs(horizontal) < 0.1f)
-            {
-                animator.SetInteger("Direction", 3);
-                camY = transform.position.y - 1.75f;
-            }
-            else if (horizontal > 0)
-            {
-                animator.SetInteger("Direction", 1);
-            }
-            else if (horizontal < 0)
-            {
-                animator.SetInteger("Direction", -1);
-            }
-            else
-            {
-                animator.SetInteger("Direction", 0);
-            }
-
-
-            if (camY < 7.75f)
-            {
-                camY = 7.75f;
-            }
+            DoWhileGrounded();
         }
         else
         {
-            if (horizontal >= 0)
-            {
-                animator.SetInteger("Direction", 2);
-                animator.Play("playerJumping"); //overly redundant?
-            }
-            else if (horizontal < 0)
-            {
-                animator.SetInteger("Direction", -2);
-                animator.Play("playerJumpingLeft"); //see above
-            }
-            if (!rend.isVisible)
-            {
-                camY = transform.position.y;
-            }
-            
+            DoWhileAirborne();        
         }
-        camX = transform.position.x+5;
-        if (playerStartX > camX)
-        {
-            camX = playerStartX;
-        }
-        if (camX > elX)
-        {
-            camX = elX;
-        }
-        //cam.transform.position = new Vector3(cam.transform.position.x, camY, cam.transform.position.z);
-        Vector3 nextCamPosition = new Vector3(camX, camY, cam.transform.position.z);
-        if (rend.isVisible)
-        {
-            cam.transform.position = Vector3.Lerp(cam.transform.position, nextCamPosition, Time.deltaTime*1.33f);
-        }
-        else
-        {
-            cam.transform.position = Vector3.Lerp(cam.transform.position, nextCamPosition, Time.deltaTime*2.67f);
-        }
+
+        AdjustCamera();
 
         if (Input.GetButtonDown("Fire1")) {
             jumping = true;
@@ -171,9 +101,7 @@ public class playerController : MonoBehaviour {
         {
             if (dashing == 1.0f && canDash)
             {
-                aud.volume = 0.3f;
-                aud.pitch = Random.Range(0.8f, 1.2f);
-                aud.PlayOneShot(audDash);
+                PlaySound(audDash);
                 dashing = 5.0f;
                 canDash = false;
             }
@@ -186,52 +114,9 @@ public class playerController : MonoBehaviour {
         {
             NextLevel();
         }
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, -Vector2.up, 0.5f, layerMask);
+        CheckForCollision();
 
-        if (hit.collider != null)
-        {
-            isGrounded = true;
-            canJump = true;
-            if (Mathf.Abs(rb.velocity.x) > 0.1f)
-            {
-                wallJumping = false;
-                wallJumpingClock = 0;
-            }
-        }
-        else
-        {
-            isGrounded = false;
-        }
-        if (wallJumpingClock > 0)
-        {
-            wallJumpingClock -= Time.deltaTime;
-            if (wallJumpingClock <= 0)
-            {
-                wallJumping = false;
-                if (!isGrounded)
-                {
-                    canJump = false;
-                }
-            }
-        }
-        if (dashing > 1)
-        {
-            dashing -= Time.deltaTime*10;
-            if (dashing <= 1)
-            {
-                dashing = 1;
-            }
-        }
-        if (timeToDie >= 0 && dead)
-        {
-            timeToDie -= Time.deltaTime;
-            transform.localScale = new Vector3(transform.localScale.x - (Time.deltaTime * 2), transform.localScale.y - (Time.deltaTime * 2), transform.localScale.z);
-            if (timeToDie <= 0)
-            {
-                RestartLevel();
-            }
-        }
-
+        TickTock();
     }
 
     void FixedUpdate()
@@ -281,14 +166,13 @@ public class playerController : MonoBehaviour {
             {
                 yVelocity += jumpSpeed / 30f;
                 longJumpCounter--;
+                aud.pitch += 0.02f;
             }
         }
 
         if (jumping && (canJump || wallJumping))
         {
-            aud.volume = 0.2f;
-            aud.pitch = Random.Range(0.8f, 1.2f);
-            aud.PlayOneShot(audJump);
+            PlaySound(audJump, 0.2f);
             if (isGrounded || wallJumping)
             {
                 //Don't kick up dust if the player is doing a midair jump;
@@ -328,6 +212,7 @@ public class playerController : MonoBehaviour {
             xVelocity = 0;
             yVelocity = 0;
         }
+
         rb.velocity = new Vector2(xVelocity, yVelocity);
 
     }
@@ -336,12 +221,11 @@ public class playerController : MonoBehaviour {
         if (coll.gameObject.tag == "Lethal")
         {
             dead = true;
-            aud.pitch = Random.Range(0.8f, 1.2f);
-            aud.PlayOneShot(audDeath);
+            PlaySound(audDeath);
         }
         else if (coll.gameObject.tag == "Goal")
         {
-            vort.radius = new Vector2(0.1f, 0.1f);
+            vort.radius = new Vector2(0.1f, 0.1f); //setting the vortex's radius to >= 0.1f will trigger LevelEndEffect() which will, in turn, trigger NextLevel()
             //NextLevel();
         }
         else if (coll.gameObject.tag == "Coin")
@@ -359,17 +243,11 @@ public class playerController : MonoBehaviour {
         {
             if (horizontal > 0 && coll.transform.position.x > transform.position.x)
             {
-                wallJumping = true;
-                wallJumpingClock = 0.09f;
-                transform.position = new Vector3(transform.position.x, transform.position.y - (Time.fixedDeltaTime), transform.position.z);
-                canJump = true;
+                WallJump();
             }
             else if (horizontal < 0 && coll.transform.position.x < transform.position.x)
             {
-                wallJumping = true;
-                wallJumpingClock = 0.09f;
-                transform.position = new Vector3(transform.position.x, transform.position.y - (Time.fixedDeltaTime), transform.position.z);
-                canJump = true;
+                WallJump();
             }
         }
         else
@@ -377,10 +255,19 @@ public class playerController : MonoBehaviour {
             //Debug.Log("Absolute horizontal input: " + Mathf.Abs(horizontal) + "& x-velocity: " + rb.velocity.x);
             if (Mathf.Abs(horizontal) > 0.2f && Mathf.Abs(rb.velocity.x) <= 0.1f)
             {
-                wallJumping = true;
-                wallJumpingClock = 0.09f;
-                canJump = true;
+                WallJump(false);
             }
+        }
+    }
+
+    void WallJump(bool sliding=true)
+    {
+        wallJumping = true;
+        wallJumpingClock = 0.09f;
+        canJump = true;
+        if (sliding)
+        {
+            transform.position = new Vector3(transform.position.x, transform.position.y - (Time.fixedDeltaTime), transform.position.z);
         }
     }
 
@@ -399,5 +286,164 @@ public class playerController : MonoBehaviour {
         vort.radius = new Vector2(0, 0);
         int nextScene = SceneManager.GetActiveScene().buildIndex + 1;
         SceneManager.LoadScene(nextScene);
+    }
+
+    void PlaySound(AudioClip ac, float volume=0.3f)
+    {
+        aud.volume = volume;
+        aud.pitch = Random.Range(0.8f, 1.2f);
+        aud.PlayOneShot(ac);
+    }
+
+    void LevelEndEffect()
+    {
+        vort.radius = new Vector2(vort.radius.x + (Time.deltaTime * 5f), vort.radius.y + (Time.deltaTime * 5f));
+        if (transform.localScale.x > 0.2f)
+        {
+            transform.localScale = new Vector3(transform.localScale.x - (Time.deltaTime * 2), transform.localScale.y + (Time.deltaTime * 2), transform.localScale.z);
+        }
+        if (vort.radius.x >= 4.0f)
+        {
+            NextLevel();
+        }
+    }
+
+    void LevelStartEffect()
+    {
+        transform.localScale = new Vector3(transform.localScale.x + (Time.deltaTime * 2), transform.localScale.y + (Time.deltaTime * 2), transform.localScale.z);
+        if (transform.localScale.x >= 1.0f || transform.localScale.y >= 1.0f)
+        {
+            transform.localScale = new Vector3(1.0f, 1.0f, transform.localScale.z);
+        }
+    }
+
+    void DoWhileGrounded() //handles normal ground animations, enables dashing, and platform snaps the camera
+    {
+        camY = transform.position.y - 0.5f;
+        canDash = true;
+
+        var horizontal = Input.GetAxis("Horizontal");
+        var vertical = Input.GetAxis("Vertical");
+
+        if (-0.9f > vertical && Mathf.Abs(horizontal) < 0.1f)
+        {
+            animator.SetInteger("Direction", 3);
+            camY = transform.position.y - 1.75f;
+        }
+        else if (horizontal > 0)
+        {
+            animator.SetInteger("Direction", 1);
+        }
+        else if (horizontal < 0)
+        {
+            animator.SetInteger("Direction", -1);
+        }
+        else
+        {
+            animator.SetInteger("Direction", 0);
+        }
+
+
+        if (camY < 7.75f)
+        {
+            camY = 7.75f;
+        }
+    }
+
+    void DoWhileAirborne() //handles airborne animations and, if the player is out of sight, orders the camera to move to the player
+    {
+        var horizontal = Input.GetAxis("Horizontal");
+        var vertical = Input.GetAxis("Vertical");
+
+        if (horizontal >= 0)
+        {
+            animator.SetInteger("Direction", 2);
+            animator.Play("playerJumping"); //overly redundant?
+        }
+        else if (horizontal < 0)
+        {
+            animator.SetInteger("Direction", -2);
+            animator.Play("playerJumpingLeft"); //see above
+        }
+        if (!rend.isVisible)
+        {
+            camY = transform.position.y;
+        }
+    }
+
+    void AdjustCamera() //constantly lerp the camera towards the player or the target position (slightly ahead of the player)
+    {
+        camX = transform.position.x + 5;
+        if (playerStartX > camX)
+        {
+            camX = playerStartX;
+        }
+        if (camX > elX)
+        {
+            camX = elX;
+        }
+        //cam.transform.position = new Vector3(cam.transform.position.x, camY, cam.transform.position.z);
+        Vector3 nextCamPosition = new Vector3(camX, camY, cam.transform.position.z);
+        if (rend.isVisible)
+        {
+            cam.transform.position = Vector3.Lerp(cam.transform.position, nextCamPosition, Time.deltaTime * 1.33f);
+        }
+        else
+        {
+            cam.transform.position = Vector3.Lerp(cam.transform.position, nextCamPosition, Time.deltaTime * 2.67f);
+        }
+    }
+
+    void TickTock() //countdown various things
+    {
+        if (wallJumpingClock > 0)
+        {
+            wallJumpingClock -= Time.deltaTime;
+            if (wallJumpingClock <= 0)
+            {
+                wallJumping = false;
+                if (!isGrounded)
+                {
+                    canJump = false;
+                }
+            }
+        }
+        if (dashing > 1)
+        {
+            dashing -= Time.deltaTime * 10;
+            if (dashing <= 1)
+            {
+                dashing = 1;
+            }
+        }
+        if (timeToDie >= 0 && dead)
+        {
+            timeToDie -= Time.deltaTime;
+            transform.localScale = new Vector3(transform.localScale.x - (Time.deltaTime * 2), transform.localScale.y - (Time.deltaTime * 2), transform.localScale.z);
+            if (timeToDie <= 0)
+            {
+                RestartLevel();
+            }
+        }
+    }
+
+    void CheckForCollision()
+    {
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, -Vector2.up, 0.5f, layerMask);
+
+        if (hit.collider != null)
+        {
+            isGrounded = true;
+            canJump = true;
+            if (Mathf.Abs(rb.velocity.x) > 0.1f)
+            {
+                wallJumping = false;
+                wallJumpingClock = 0;
+            }
+        }
+        else
+        {
+            isGrounded = false;
+        }
     }
 } 
