@@ -13,6 +13,10 @@ public class playerController : MonoBehaviour {
     Text coinText;
     EndLevel el;
     ParticleSystem ps;
+    AudioSource aud;
+
+    public AudioClip audJump;
+    public AudioClip audDash;
 
     float maxSpeed = 6f;
     float jumpSpeed = 8.25f;
@@ -41,6 +45,7 @@ public class playerController : MonoBehaviour {
 	void Start () {
         animator = this.GetComponent<Animator>();
         rb = this.GetComponent<Rigidbody2D>();
+        aud = this.GetComponent<AudioSource>();
         cam = GameObject.FindWithTag("MainCamera").GetComponent<Camera>();
         coinText = GameObject.FindWithTag("TextCoin").GetComponent<Text>();
         rend = this.GetComponent<Renderer>();
@@ -147,6 +152,9 @@ public class playerController : MonoBehaviour {
         {
             if (dashing == 1.0f && canDash)
             {
+                aud.volume = 0.3f;
+                aud.pitch = Random.Range(0.8f, 1.2f);
+                aud.PlayOneShot(audDash);
                 dashing = 5.0f;
                 canDash = false;
             }
@@ -247,6 +255,9 @@ public class playerController : MonoBehaviour {
 
         if (jumping && (canJump || wallJumping))
         {
+            aud.volume = 0.2f;
+            aud.pitch = Random.Range(0.8f, 1.2f);
+            aud.PlayOneShot(audJump);
             yVelocity = jumpSpeed;
             ps.Play();
             if (wallJumping)
