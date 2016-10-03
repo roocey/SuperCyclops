@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityStandardAssets.ImageEffects;
 using System.Collections;
 
 public class playerController : MonoBehaviour {
@@ -14,9 +15,11 @@ public class playerController : MonoBehaviour {
     EndLevel el;
     ParticleSystem ps;
     AudioSource aud;
-
+    Vortex vort;
+    
     public AudioClip audJump;
     public AudioClip audDash;
+    public AudioClip audDeath;
 
     float maxSpeed = 6f;
     float jumpSpeed = 8.25f;
@@ -29,6 +32,7 @@ public class playerController : MonoBehaviour {
     float wallJumpingClock = 0f; //counter that measures how long the player after contacting a wall to make a wall jump (2/3rds of a second)
     float playerStartX;
     float elX;
+    float timeToDie = 0.5f; //time it takes for the level to restart after death
 
     bool jumping = false;
     bool canDash = true;
@@ -36,6 +40,7 @@ public class playerController : MonoBehaviour {
     bool wallJumping = false;
     bool gotCoinThisLevel = false;
     bool canJump = false;
+    bool dead = false;
 
     int pushAwayCounter = 0; //number of FixedUpdate ticks the player is pushed away after wall jumping (6)
     int longJumpCounter = 0; //number of Update ticks the player can hold down jump to extend their jump (10)
@@ -47,6 +52,7 @@ public class playerController : MonoBehaviour {
         rb = this.GetComponent<Rigidbody2D>();
         aud = this.GetComponent<AudioSource>();
         cam = GameObject.FindWithTag("MainCamera").GetComponent<Camera>();
+        vort = cam.gameObject.GetComponent<Vortex>();
         coinText = GameObject.FindWithTag("TextCoin").GetComponent<Text>();
         rend = this.GetComponent<Renderer>();
         layerMask = LayerMask.GetMask("Ground");
@@ -60,7 +66,20 @@ public class playerController : MonoBehaviour {
 
     // Update is called once per frame
     void Update () {
-        if (transform.localScale.x != 1.0f || transform.localScale.y != 1.0f)
+        if (vort.radius.x >= 0.1f)
+        {
+            vort.radius = new Vector2(vort.radius.x + (Time.deltaTime * 5f), vort.radius.y + (Time.deltaTime * 5f));
+            if (transform.localScale.x > 0.2f)
+            {
+                transform.localScale = new Vector3(transform.localScale.x - (Time.deltaTime * 2), transform.localScale.y + (Time.deltaTime * 2), transform.localScale.z);
+            }
+            if (vort.radius.x >= 4.0f)
+            {
+                NextLevel();
+            }
+            return;
+        }
+        if ((transform.localScale.x != 1.0f || transform.localScale.y != 1.0f) && !dead)
         {
             transform.localScale = new Vector3(transform.localScale.x + (Time.deltaTime*2), transform.localScale.y + (Time.deltaTime*2), transform.localScale.z);
             if (transform.localScale.x >= 1.0f || transform.localScale.y >= 1.0f)
@@ -203,6 +222,15 @@ public class playerController : MonoBehaviour {
                 dashing = 1;
             }
         }
+        if (timeToDie >= 0 && dead)
+        {
+            timeToDie -= Time.deltaTime;
+            transform.localScale = new Vector3(transform.localScale.x - (Time.deltaTime * 2), transform.localScale.y - (Time.deltaTime * 2), transform.localScale.z);
+            if (timeToDie <= 0)
+            {
+                RestartLevel();
+            }
+        }
 
     }
 
@@ -213,7 +241,10 @@ public class playerController : MonoBehaviour {
 
         if (isGrounded)
         {
-            xVelocity = Input.GetAxis("Horizontal") * maxSpeed * dashing;
+            if (vort.radius.x <= 0)
+            {
+                xVelocity = Input.GetAxis("Horizontal") * maxSpeed * dashing;
+            }
         }
         else
         {
@@ -258,8 +289,12 @@ public class playerController : MonoBehaviour {
             aud.volume = 0.2f;
             aud.pitch = Random.Range(0.8f, 1.2f);
             aud.PlayOneShot(audJump);
+            if (isGrounded || wallJumping)
+            {
+                //Don't kick up dust if the player is doing a midair jump;
+                ps.Play();
+            }
             yVelocity = jumpSpeed;
-            ps.Play();
             if (wallJumping)
             {
                 canDash = true;
@@ -288,6 +323,11 @@ public class playerController : MonoBehaviour {
             }
         }
 
+        if (dead)
+        {
+            xVelocity = 0;
+            yVelocity = 0;
+        }
         rb.velocity = new Vector2(xVelocity, yVelocity);
 
     }
@@ -295,11 +335,14 @@ public class playerController : MonoBehaviour {
     {
         if (coll.gameObject.tag == "Lethal")
         {
-            RestartLevel();
+            dead = true;
+            aud.pitch = Random.Range(0.8f, 1.2f);
+            aud.PlayOneShot(audDeath);
         }
         else if (coll.gameObject.tag == "Goal")
         {
-            NextLevel();
+            vort.radius = new Vector2(0.1f, 0.1f);
+            //NextLevel();
         }
         else if (coll.gameObject.tag == "Coin")
         {
@@ -353,6 +396,7 @@ public class playerController : MonoBehaviour {
     void NextLevel()
     {
         //could use a test function of some kind (Scene.isValid() ? )
+        vort.radius = new Vector2(0, 0);
         int nextScene = SceneManager.GetActiveScene().buildIndex + 1;
         SceneManager.LoadScene(nextScene);
     }

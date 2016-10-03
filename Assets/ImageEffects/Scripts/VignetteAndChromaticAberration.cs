@@ -42,7 +42,8 @@ namespace UnityStandardAssets.ImageEffects
             }
             if (Input.GetButtonDown("Fire2"))
             {
-                chromaticAberration += UnityEngine.Random.Range(6.0f, 8.0f);
+                chromaticAberration = 0;
+                //chromaticAberration += UnityEngine.Random.Range(6.0f, 8.0f);
             }
             if (chromaticAberration > chromaticAbberationStart)
             {
