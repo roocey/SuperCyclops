@@ -4,15 +4,11 @@ using UnityEngine.UI;
 using UnityStandardAssets.ImageEffects;
 using System.Collections;
 
-public class playerController : MonoBehaviour {
+public class PlayerMovementController : MonoBehaviour {
 
-    Animator animator;
     Rigidbody2D rb;
-    Camera cam;
-    Renderer rend;
     Management manage;
     Text coinText;
-    EndLevel el;
     ParticleSystem ps;
     AudioSource aud;
     Vortex vort;
@@ -27,45 +23,42 @@ public class playerController : MonoBehaviour {
     float jumpPenaltySpeed = 4.5f; //maximum horizontal velocity while jumping in the opposite direction the jump started in (e.g., making a right-facing jump go left). also applies when jumping with 0 velocity
     float dashing = 1.0f;
     float pushAwayDirection = 0f;
-    float camY;
-    float camX;
     float wallJumpingClock = 0f; //counter that measures how long the player after contacting a wall to make a wall jump (2/3rds of a second)
-    float playerStartX;
-    float elX;
     float timeToDie = 0.5f; //time it takes for the level to restart after death
+    [HideInInspector]
+    public float horizontal;
+    [HideInInspector]
+    public float vertical;
 
     bool jumping = false;
     bool canDash = true;
-    bool isGrounded = true;
     bool wallJumping = false;
     bool gotCoinThisLevel = false;
     bool canJump = false;
     bool dead = false;
+    [HideInInspector]
+    public bool isGrounded = true;
 
-    int pushAwayCounter = 0; //number of FixedUpdate ticks the player is pushed away after wall jumping (6)
-    int longJumpCounter = 0; //number of Update ticks the player can hold down jump to extend their jump (10)
+    int pushAwayCounter = 0; //number of FixedUpdate ticks the player is pushed away after wall jumping
+    int longJumpCounter = 0; //number of Update ticks the player can hold down jump to extend their jump
     int layerMask;
 
 	// Use this for initialization
 	void Start () {
-        animator = this.GetComponent<Animator>();
         rb = this.GetComponent<Rigidbody2D>();
         aud = this.GetComponent<AudioSource>();
-        cam = GameObject.FindWithTag("MainCamera").GetComponent<Camera>();
-        vort = cam.gameObject.GetComponent<Vortex>();
+        vort = (Vortex)FindObjectOfType(typeof(Vortex));
         coinText = GameObject.FindWithTag("TextCoin").GetComponent<Text>();
-        rend = this.GetComponent<Renderer>();
         layerMask = LayerMask.GetMask("Ground");
-        playerStartX = transform.position.x+13.6f;
-        el = (EndLevel)FindObjectOfType(typeof(EndLevel));
         manage = (Management)FindObjectOfType(typeof(Management));
-        elX = el.gameObject.transform.position.x-9.0f;
         ps = this.GetComponent<ParticleSystem>();
         transform.localScale = new Vector3(0.1f, 0.1f, transform.localScale.z);
     }
 
     // Update is called once per frame
     void Update () {
+        horizontal = Input.GetAxis("Horizontal");
+        vertical = Input.GetAxis("Vertical");
         if (vort.radius.x >= 0.1f)
         {
             LevelEndEffect();
@@ -75,24 +68,10 @@ public class playerController : MonoBehaviour {
             LevelStartEffect();
         }
         coinText.text = "x" +  manage.coinCounter.ToString();
-        var horizontal = Input.GetAxis("Horizontal");
-        var vertical = Input.GetAxis("Vertical");
-        if (playerStartX-16 > transform.position.x || transform.position.x > elX+11)
-        {
-            //Debug.Log("Out of bounds - reloading level!");
-            RestartLevel();
-        }
         if (isGrounded)
         {
-            DoWhileGrounded();
+            canDash = true;
         }
-        else
-        {
-            DoWhileAirborne();        
-        }
-
-        AdjustCamera();
-
         if (Input.GetButtonDown("Fire1")) {
             jumping = true;
             jumpXVelocity = rb.velocity.x;
@@ -226,7 +205,6 @@ public class playerController : MonoBehaviour {
         else if (coll.gameObject.tag == "Goal")
         {
             vort.radius = new Vector2(0.1f, 0.1f); //setting the vortex's radius to >= 0.1f will trigger LevelEndEffect() which will, in turn, trigger NextLevel()
-            //NextLevel();
         }
         else if (coll.gameObject.tag == "Coin")
         {
@@ -271,7 +249,7 @@ public class playerController : MonoBehaviour {
         }
     }
 
-    void RestartLevel()
+    public void RestartLevel()
     {
         if (gotCoinThisLevel)
         {
@@ -314,83 +292,6 @@ public class playerController : MonoBehaviour {
         if (transform.localScale.x >= 1.0f || transform.localScale.y >= 1.0f)
         {
             transform.localScale = new Vector3(1.0f, 1.0f, transform.localScale.z);
-        }
-    }
-
-    void DoWhileGrounded() //handles normal ground animations, enables dashing, and platform snaps the camera
-    {
-        camY = transform.position.y - 0.5f;
-        canDash = true;
-
-        var horizontal = Input.GetAxis("Horizontal");
-        var vertical = Input.GetAxis("Vertical");
-
-        if (-0.9f > vertical && Mathf.Abs(horizontal) < 0.1f)
-        {
-            animator.SetInteger("Direction", 3);
-            camY = transform.position.y - 1.75f;
-        }
-        else if (horizontal > 0)
-        {
-            animator.SetInteger("Direction", 1);
-        }
-        else if (horizontal < 0)
-        {
-            animator.SetInteger("Direction", -1);
-        }
-        else
-        {
-            animator.SetInteger("Direction", 0);
-        }
-
-
-        if (camY < 7.75f)
-        {
-            camY = 7.75f;
-        }
-    }
-
-    void DoWhileAirborne() //handles airborne animations and, if the player is out of sight, orders the camera to move to the player
-    {
-        var horizontal = Input.GetAxis("Horizontal");
-        var vertical = Input.GetAxis("Vertical");
-
-        if (horizontal >= 0)
-        {
-            animator.SetInteger("Direction", 2);
-            animator.Play("playerJumping"); //overly redundant?
-        }
-        else if (horizontal < 0)
-        {
-            animator.SetInteger("Direction", -2);
-            animator.Play("playerJumpingLeft"); //see above
-        }
-        if (!rend.isVisible)
-        {
-            camY = transform.position.y;
-        }
-    }
-
-    void AdjustCamera() //constantly lerp the camera towards the player or the target position (slightly ahead of the player)
-    {
-        camX = transform.position.x + 5;
-        if (playerStartX > camX)
-        {
-            camX = playerStartX;
-        }
-        if (camX > elX)
-        {
-            camX = elX;
-        }
-        //cam.transform.position = new Vector3(cam.transform.position.x, camY, cam.transform.position.z);
-        Vector3 nextCamPosition = new Vector3(camX, camY, cam.transform.position.z);
-        if (rend.isVisible)
-        {
-            cam.transform.position = Vector3.Lerp(cam.transform.position, nextCamPosition, Time.deltaTime * 1.33f);
-        }
-        else
-        {
-            cam.transform.position = Vector3.Lerp(cam.transform.position, nextCamPosition, Time.deltaTime * 2.67f);
         }
     }
 
