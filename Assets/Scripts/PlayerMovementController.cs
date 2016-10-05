@@ -330,7 +330,8 @@ public class PlayerMovementController : MonoBehaviour {
 
     void CheckForCollision()
     {
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, -Vector2.up, 0.5f, layerMask);
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, -Vector2.up, 0.6f, layerMask);
+        Debug.DrawRay(transform.position, -Vector2.up, Color.green, 0.3f);
 
         if (hit.collider != null)
         {
