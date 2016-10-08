@@ -32,7 +32,7 @@ public class PlayerMovementController : MonoBehaviour {
 
     bool jumping = false;
     bool canDash = true;
-    bool wallJumping = false;
+    public bool wallJumping = false;
     bool gotCoinThisLevel = false;
     bool canJump = false;
     bool dead = false;
@@ -59,6 +59,10 @@ public class PlayerMovementController : MonoBehaviour {
     void Update () {
         horizontal = Input.GetAxis("Horizontal");
         vertical = Input.GetAxis("Vertical");
+        if (transform.position.y <= -8f)
+        {
+            RestartLevel();
+        }
         if (vort.radius.x >= 0.1f)
         {
             LevelEndEffect();
@@ -158,6 +162,7 @@ public class PlayerMovementController : MonoBehaviour {
                 ps.Play();
             }
             yVelocity = jumpSpeed;
+            longJumpCounter = 15;
             if (wallJumping)
             {
                 canDash = true;
@@ -168,7 +173,6 @@ public class PlayerMovementController : MonoBehaviour {
             }
             wallJumping = false;
             canJump = false;
-            longJumpCounter = 15;
         }
 
         jumping = false;
@@ -245,7 +249,7 @@ public class PlayerMovementController : MonoBehaviour {
         canJump = true;
         if (sliding)
         {
-            transform.position = new Vector3(transform.position.x, transform.position.y - (Time.fixedDeltaTime), transform.position.z);
+            transform.position = new Vector3(transform.position.x, transform.position.y - (Time.fixedDeltaTime / 2), transform.position.z);
         }
     }
 

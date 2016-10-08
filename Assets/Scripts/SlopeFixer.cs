@@ -43,7 +43,7 @@ public class SlopeFixer : MonoBehaviour {
             {
                 if (hit.collider.tag == "Left Slope")
                 {
-                    hit.collider.transform.Rotate(0, 180, 0);
+                    //hit.collider.transform.Rotate(0, 180, 0);
                     hit.collider.tag = "Right Slope";
                     if (sr.sprite == spLeft)
                     {
@@ -63,7 +63,7 @@ public class SlopeFixer : MonoBehaviour {
                 {
                     if (hit.collider.tag == "Left Slope")
                     {
-                        hit.collider.transform.Rotate(0, 180, 0);
+                        //hit.collider.transform.Rotate(0, 180, 0);
                         hit.collider.tag = "Right Slope";
                     }
                 }

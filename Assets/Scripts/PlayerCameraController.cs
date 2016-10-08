@@ -52,10 +52,6 @@ public class PlayerCameraController : MonoBehaviour {
             {
                 camY = transform.position.y - 1.75f;
             }
-            if (camY < 7.75f)
-            {
-                camY = 7.75f;
-            }
         }
         else
         {
@@ -63,6 +59,14 @@ public class PlayerCameraController : MonoBehaviour {
             {
                 camY = transform.position.y;
             }
+            if (pmc.wallJumping)
+            {
+                camY = transform.position.y - 1.5f;
+            }
+        }
+        if (camY < 7.75f)
+        {
+            camY = 7.75f;
         }
         if (playerStartX - 16 > transform.position.x || transform.position.x > endOfLevelX + 11)
         {
