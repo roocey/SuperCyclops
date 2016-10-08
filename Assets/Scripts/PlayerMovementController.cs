@@ -20,7 +20,6 @@ public class PlayerMovementController : MonoBehaviour {
     float maxSpeed = 6f;
     float jumpSpeed = 8.25f;
     float jumpXVelocity = 0f;
-    float jumpPenaltySpeed = 4.5f; //maximum horizontal velocity while jumping in the opposite direction the jump started in (e.g., making a right-facing jump go left). also applies when jumping with 0 velocity
     float dashing = 1.0f;
     float pushAwayDirection = 0f;
     float wallJumpingClock = 0f; //counter that measures how long the player after contacting a wall to make a wall jump (2/3rds of a second)
@@ -67,7 +66,7 @@ public class PlayerMovementController : MonoBehaviour {
         {
             LevelEndEffect();
         }
-        if ((transform.localScale.x != 1.0) && !dead)
+        if ((transform.localScale.x != 0.75) && !dead)
         {
             LevelStartEffect();
         }
@@ -75,6 +74,10 @@ public class PlayerMovementController : MonoBehaviour {
         if (isGrounded)
         {
             canDash = true;
+        }
+        else
+        {
+            canJump = false;
         }
         if (Input.GetButtonDown("Fire1")) {
             jumping = true;
@@ -107,41 +110,9 @@ public class PlayerMovementController : MonoBehaviour {
         float xVelocity = rb.velocity.x;
         float yVelocity = rb.velocity.y;
 
-        if (isGrounded)
-        {
-            if (vort.radius.x <= 0)
-            {
-                xVelocity = Input.GetAxis("Horizontal") * maxSpeed * dashing;
-            }
-        }
-        else
+        if (vort.radius.x <= 0)
         {
             xVelocity = Input.GetAxis("Horizontal") * maxSpeed * dashing;
-            if (jumpXVelocity > -0.09 && jumpXVelocity < 0.09)
-            {
-                if (xVelocity < -jumpPenaltySpeed)
-                {
-                    xVelocity = -jumpPenaltySpeed * dashing;
-                }
-                else if (xVelocity > jumpPenaltySpeed)
-                {
-                    xVelocity = jumpPenaltySpeed * dashing;
-                }
-            }
-            else if (jumpXVelocity > 0)
-            {
-                if (xVelocity < -jumpPenaltySpeed)
-                {
-                    xVelocity = -jumpPenaltySpeed * dashing;
-                }
-            }
-            else if (jumpXVelocity < 0)
-            {
-                if (xVelocity > jumpPenaltySpeed)
-                {
-                    xVelocity = jumpPenaltySpeed * dashing;
-                }
-            }
         }
         if (Input.GetButton("Fire1"))
         {
@@ -162,13 +133,13 @@ public class PlayerMovementController : MonoBehaviour {
                 ps.Play();
             }
             yVelocity = jumpSpeed;
-            longJumpCounter = 15;
+            longJumpCounter = 30;
             if (wallJumping)
             {
                 canDash = true;
+                wallJumpingClock = 0;
                 pushAwayCounter = 6;
                 pushAwayDirection = Input.GetAxis("Horizontal");
-                wallJumpingClock = 0;
                 jumpXVelocity = -pushAwayDirection;
             }
             wallJumping = false;
@@ -179,8 +150,8 @@ public class PlayerMovementController : MonoBehaviour {
 
         if (pushAwayCounter > 0)
         {
-            pushAwayCounter -= 1;
-            xVelocity = -pushAwayDirection * maxSpeed * dashing * 1.11f;
+            pushAwayCounter--;
+            xVelocity = -pushAwayDirection * maxSpeed;
         }
         if (dashing > 1)
         {
@@ -249,7 +220,7 @@ public class PlayerMovementController : MonoBehaviour {
         canJump = true;
         if (sliding)
         {
-            transform.position = new Vector3(transform.position.x, transform.position.y - (Time.fixedDeltaTime / 2), transform.position.z);
+            transform.position = new Vector3(transform.position.x, transform.position.y - (Time.deltaTime * (2/3f)), transform.position.z);
         }
     }
 
@@ -293,9 +264,9 @@ public class PlayerMovementController : MonoBehaviour {
     void LevelStartEffect()
     {
         transform.localScale = new Vector3(transform.localScale.x + (Time.deltaTime * 2), transform.localScale.y + (Time.deltaTime * 2), transform.localScale.z);
-        if (transform.localScale.x >= 1.0f || transform.localScale.y >= 1.0f)
+        if (transform.localScale.x >= 0.75f)
         {
-            transform.localScale = new Vector3(1.0f, 1.0f, transform.localScale.z);
+            transform.localScale = new Vector3(0.75f, 0.75f, transform.localScale.z);
         }
     }
 
