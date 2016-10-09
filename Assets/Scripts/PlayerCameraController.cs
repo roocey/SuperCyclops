@@ -68,10 +68,5 @@ public class PlayerCameraController : MonoBehaviour {
         {
             camY = 7.75f;
         }
-        if (playerStartX - 16 > transform.position.x || transform.position.x > endOfLevelX + 11)
-        {
-            //Debug.Log("Out of bounds - reloading level!");
-            pmc.RestartLevel();
-        }
     }
 }

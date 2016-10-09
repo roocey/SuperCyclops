@@ -31,8 +31,8 @@ public class PlayerMovementController : MonoBehaviour {
 
     bool jumping = false;
     bool canDash = true;
+    [HideInInspector]
     public bool wallJumping = false;
-    bool gotCoinThisLevel = false;
     bool canJump = false;
     bool dead = false;
     [HideInInspector]
@@ -41,6 +41,7 @@ public class PlayerMovementController : MonoBehaviour {
     int pushAwayCounter = 0; //number of FixedUpdate ticks the player is pushed away after wall jumping
     int longJumpCounter = 0; //number of Update ticks the player can hold down jump to extend their jump
     int layerMask;
+    int coinsGotThisLevel = 0;
 
 	// Use this for initialization
 	void Start () {
@@ -184,7 +185,7 @@ public class PlayerMovementController : MonoBehaviour {
         else if (coll.gameObject.tag == "Coin")
         {
             Destroy(coll.gameObject);
-            gotCoinThisLevel = true;
+            coinsGotThisLevel++;
             manage.coinCounter++;
         }
     }
@@ -226,10 +227,7 @@ public class PlayerMovementController : MonoBehaviour {
 
     public void RestartLevel()
     {
-        if (gotCoinThisLevel)
-        {
-            manage.coinCounter--;
-        }
+        manage.coinCounter -= coinsGotThisLevel;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
